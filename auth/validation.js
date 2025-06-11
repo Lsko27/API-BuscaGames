@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email e senha são obrigatórios' });
   }
 
-  email = email.toLowerCase();  // <-- força lowercase
+  email = email.toLowerCase();  // força lowercase
 
   try {
     const user = await prisma.user.findUnique({
@@ -39,6 +39,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        userName: user.userName,
       },
     });
   } catch (error) {
@@ -47,24 +48,33 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
 // Rota para registro de usuário
 router.post('/register', async (req, res) => {
-  let { firstName, lastName, email, password } = req.body;
+  let { firstName, lastName, userName, email, password } = req.body;
 
-  if (!firstName || !lastName || !email || !password) {
+  if (!firstName || !lastName || !userName || !email || !password) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
   }
 
-  email = email.toLowerCase();  // <-- força lowercase aqui também
+  userName = userName.toLowerCase();
+  email = email.toLowerCase();
 
   try {
-    const existingUser = await prisma.user.findUnique({
+    // Verifica se já existe userName ou email cadastrado
+    const existingUserByEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       return res.status(409).json({ error: 'Email já cadastrado' });
+    }
+
+    const existingUserByUserName = await prisma.user.findUnique({
+      where: { userName },
+    });
+
+    if (existingUserByUserName) {
+      return res.status(409).json({ error: 'Nome de usuário já cadastrado' });
     }
 
     const saltRounds = 10;
@@ -73,6 +83,7 @@ router.post('/register', async (req, res) => {
     const newUser = await prisma.user.create({
       data: {
         name: `${firstName} ${lastName}`,
+        userName,
         email,
         password: hashedPassword,
       },
@@ -83,6 +94,7 @@ router.post('/register', async (req, res) => {
       user: {
         id: newUser.id,
         name: newUser.name,
+        userName: newUser.userName,
         email: newUser.email,
       },
     });
@@ -92,7 +104,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 // Rota para listar todos os usuários
 router.get('/users', async (req, res) => {
   try {
@@ -100,13 +111,39 @@ router.get('/users', async (req, res) => {
       select: {
         id: true,
         name: true,
+        userName: true,
         email: true,
       },
     });
 
+    
     res.json(users);
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
+// Rota para verificar se username já existe (GET)
+router.get('/users/:userName', async (req, res) => {
+  const { userName } = req.params;
+
+  if (!userName) {
+    return res.status(400).json({ error: 'Nome de usuário é obrigatório' });
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { userName: userName.toLowerCase() },
+    });
+
+    if (existingUser) {
+      return res.json({ exists: true });
+    } else {
+      return res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Erro ao verificar username:', error);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });

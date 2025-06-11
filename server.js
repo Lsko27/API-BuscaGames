@@ -7,11 +7,15 @@ const app = express();
 const PORT = 4000;
 const prisma = new PrismaClient();
 
+
 app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./auth/validation');
 app.use('/api/auth', authRoutes);
+
+const userRoutes = require('./auth/routes/users');
+app.use('/api/users', userRoutes);
 
 app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
