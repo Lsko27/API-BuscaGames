@@ -5,35 +5,50 @@ const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
-// Middleware para garantir que o corpo da requisição seja JSON
 router.use(express.json());
 
-// Rota para login
 router.post('/login', async (req, res) => {
-  let { email, password } = req.body;
+  const { email, userName, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+  if ((!email && !userName) || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email ou nome de usuário e senha são obrigatórios',
+    });
   }
 
-  email = email.toLowerCase();  // força lowercase
-
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Converte para minúsculo por segurança
+    const identifier = (email || userName).toLowerCase();
+
+    // Busca o usuário por email ou userName
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { userName: identifier },
+        ],
+      },
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Usuário não encontrado' });
+      return res.status(401).json({
+        success: false,
+        error: 'Usuário não encontrado',
+      });
     }
 
     const senhaValida = await bcrypt.compare(password, user.password);
 
     if (!senhaValida) {
-      return res.status(401).json({ error: 'Senha incorreta' });
+      return res.status(401).json({
+        success: false,
+        error: 'Senha incorreta',
+      });
     }
 
-    res.json({
+    return res.json({
+      success: true,
       message: 'Login efetuado com sucesso',
       user: {
         id: user.id,
@@ -42,9 +57,13 @@ router.post('/login', async (req, res) => {
         userName: user.userName,
       },
     });
+
   } catch (error) {
     console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro interno no servidor' });
+    return res.status(500).json({
+      success: false,
+      error: 'Erro interno no servidor',
+    });
   }
 });
 
