@@ -8,9 +8,9 @@ const prisma = new PrismaClient();
 router.use(express.json());
 
 router.post('/login', async (req, res) => {
-  const { email, userName, password } = req.body;
+  const { email, password } = req.body;
 
-  if ((!email && !userName) || !password) {
+  if (!email || !password) {
     return res.status(400).json({
       success: false,
       error: 'Email ou nome de usuário e senha são obrigatórios',
