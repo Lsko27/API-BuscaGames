@@ -2,11 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-aqui'; // altere para uma chave segura no .env
 
 router.use(express.json());
 
+// Rota de login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -18,10 +21,8 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Converte para minúsculo por segurança
-    const identifier = (email || userName).toLowerCase();
+    const identifier = email.toLowerCase();
 
-    // Busca o usuário por email ou userName
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -47,9 +48,17 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Cria o token JWT com dados do usuário e tempo de expiração
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, userName: user.userName },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
     return res.json({
       success: true,
       message: 'Login efetuado com sucesso',
+      token,
       user: {
         id: user.id,
         name: user.name,
@@ -57,7 +66,6 @@ router.post('/login', async (req, res) => {
         userName: user.userName,
       },
     });
-
   } catch (error) {
     console.error('Erro no login:', error);
     return res.status(500).json({
@@ -135,7 +143,6 @@ router.get('/users', async (req, res) => {
       },
     });
 
-    
     res.json(users);
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
