@@ -11,11 +11,22 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 
+app.use(
+    cors({
+        origin: process.env.FRONT_URL,
+        credentials: true,
+    })
+);
+
 const authRoutes = require('./auth/validation');
 app.use('/api/auth', authRoutes);
 
+const oauthRoutes = require('./auth/routes/auth');
+app.use("/auth", oauthRoutes);
+
 const userRoutes = require('./auth/routes/users');
 app.use('/api/users', userRoutes);
+
 
 app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
