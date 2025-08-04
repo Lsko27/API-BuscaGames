@@ -18,11 +18,11 @@ app.use(
     })
 );
 
-const authRoutes = require('./auth/validation');
-app.use('/api/auth', authRoutes);
+const ValidationRoutes = require('./auth/validation');
+app.use('/api/auth', ValidationRoutes);
 
-const oauthRoutes = require('./auth/routes/auth');
-app.use("/auth", oauthRoutes);
+const authRoutes = require('./auth/routes/auth');
+app.use("/auth", authRoutes);
 
 const userRoutes = require('./auth/routes/users');
 app.use('/api/users', userRoutes);

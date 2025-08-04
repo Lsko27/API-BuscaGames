@@ -44,30 +44,28 @@ passport.use(
         },
         async (accessToken, refreshToken, profile, done) => {
             try {
-                const email = profile.emails?.[0]?.value;
-                const name = profile.displayName;
-                const userName = email.split("@")[0];
+                const email = profile.emails?.[0]?.value || `${profile.id}@google.com`;
 
-                // Tenta achar o usuário pelo email
-                let user = await prisma.user.findUnique({
-                    where: { email },
-                });
+                let user = await prisma.user.findUnique({ where: { email } });
 
-                // Se não existe, cria novo usuário
                 if (!user) {
                     user = await prisma.user.create({
-                        data: { name, userName, email },
+                        data: {
+                            email,
+                            name: profile.displayName,
+                            googleId: profile.id,
+                        },
                     });
                 }
 
                 return done(null, user);
-            } catch (error) {
-                console.error("Erro no login com Google:", error);
-                return done(error, null);
+            } catch (err) {
+                return done(err, null);
             }
         }
     )
 );
+
 
 // Rota para iniciar login com Google
 router.get(
