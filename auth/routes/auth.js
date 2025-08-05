@@ -86,7 +86,7 @@ router.get(
             userName: req.user.userName || null,
         };
 
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "15m" });
 
         // Envia o token num cookie HTTP-only (mais seguro)
         res.cookie("token", token, {

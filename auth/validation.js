@@ -63,7 +63,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const token = jwt.sign(
       { userId: user.id, email: user.email, userName: user.userName },
       JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '15m' }
     );
 
     return res.json({
@@ -96,6 +96,41 @@ router.post('/logout', (req, res) => {
   });
   return res.status(200).json({ message: 'Logout efetuado com sucesso' });
 });
+
+
+// Rota para redefinir senha
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
+  }
+
+  try {
+    // Verifica se o token é válido
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Criptografa a nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualiza no banco
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Senha atualizada com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(400).json({ error: 'Token inválido ou expirado' });
+  }
+});
+
 
 // Rota para registro de usuário
 router.post('/register', async (req, res) => {

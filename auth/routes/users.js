@@ -41,21 +41,16 @@ router.get('/check-username/:userName', async (req, res) => {
 // Novo endpoint para obter o usuário logado
 // Retorna os dados do usuário logado com base no token do cookie
 router.get("/me", async (req, res) => {
-  console.log("===== /me request =====");
-  console.log("Cookies recebidos:", req.cookies);
 
   const token = req.cookies?.token;
-  console.log("Token encontrado:", token);
 
   if (!token) {
-    console.log("Nenhum token encontrado. Retornando 401.");
     return res.status(401).json({ error: "Token não encontrado" });
   }
 
   try {
     // Decodifica o token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Payload decodificado do token:", decoded);
 
     // Busca usuário no banco
     const user = await prisma.user.findUnique({
@@ -64,11 +59,10 @@ router.get("/me", async (req, res) => {
     });
 
     if (!user) {
-      console.log("Usuário não encontrado no banco!");
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    console.log("Usuário autenticado com sucesso:", user);
+
 
     // Retorna os dados do usuário
     res.json(user);
@@ -76,7 +70,7 @@ router.get("/me", async (req, res) => {
   } catch (error) {
     console.error("Erro ao verificar token:", error);
     res.status(401).json({ error: "Token inválido ou expirado" });
-  }
+  }j
 });
 
 
