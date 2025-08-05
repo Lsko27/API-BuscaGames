@@ -3,14 +3,25 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const rateLimit = require("express-rate-limit");
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-aqui'; // altere para uma chave segura no .env
 
 router.use(express.json());
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // máximo de 5 tentativas
+  message: {
+    error: "Muitas tentativas de login. Por favor, tente novamente após 15 minutos.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Rota de login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -73,6 +84,17 @@ router.post('/login', async (req, res) => {
       error: 'Erro interno no servidor',
     });
   }
+});
+
+// rota de logout 
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+  return res.status(200).json({ message: 'Logout efetuado com sucesso' });
 });
 
 // Rota para registro de usuário
