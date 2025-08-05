@@ -13,10 +13,13 @@ app.use(express.json());
 
 app.use(
     cors({
-        origin: process.env.FRONT_URL,
+        origin: "http://localhost:3000",
         credentials: true,
     })
 );
+
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 const ValidationRoutes = require('./auth/validation');
 app.use('/api/auth', ValidationRoutes);
