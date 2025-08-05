@@ -101,4 +101,15 @@ router.get(
     }
 );
 
+// Rota para logout — limpa o cookie JWT HTTP-only
+router.post('/logout', (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+    });
+    res.json({ message: 'Logout realizado com sucesso' });
+});
+
 module.exports = router;
