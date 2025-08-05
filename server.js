@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
@@ -8,8 +9,7 @@ const PORT = 4000;
 const prisma = new PrismaClient();
 
 
-app.use(cors());
-app.use(express.json());
+app.use(cookieParser());
 
 app.use(
     cors({
@@ -18,8 +18,7 @@ app.use(
     })
 );
 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+app.use(express.json());
 
 const ValidationRoutes = require('./auth/validation');
 app.use('/api/auth', ValidationRoutes);

@@ -10,15 +10,13 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Verifica se JWT_SECRET está definido no .env
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET não definido no arquivo .env');
 }
 
-// Configura a sessão (necessária pro Passport funcionar)
 router.use(
     session({
-        secret: process.env.JWT_SECRET,  // usa o secret do .env
+        secret: process.env.JWT_SECRET,
         resave: false,
         saveUninitialized: true,
     })
@@ -26,12 +24,10 @@ router.use(
 router.use(passport.initialize());
 router.use(passport.session());
 
-// Serializa usuário na sessão (salva só o ID)
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
-// Desserializa usuário da sessão
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await prisma.user.findUnique({ where: { id } });
@@ -41,7 +37,6 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// Configura a estratégia Google OAuth
 passport.use(
     new GoogleStrategy(
         {
@@ -73,32 +68,36 @@ passport.use(
     )
 );
 
-// Rota para iniciar login com Google
 router.get(
     "/google",
     passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// Callback do Google
 router.get(
     "/google/callback",
     passport.authenticate("google", {
         failureRedirect: "/login",
     }),
     (req, res) => {
-        // Gera o JWT usando o secret garantido no começo
-        const token = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-        
-        // Manda o token no cookie HTTP-only (mais seguro, só backend acessa)
+        // Gera o token JWT com mesmo formato do login normal
+        const tokenPayload = {
+            userId: req.user.id,
+            email: req.user.email,
+            userName: req.user.userName || null,
+        };
+
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+        // Envia o token num cookie HTTP-only (mais seguro)
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // true só em produção com HTTPS
+            secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
         });
 
-        // Redireciona para o front passando o token, ou guarda o token de outra forma
-        res.redirect(`${process.env.FRONT_URL}/profile?token=${token}`);
+        // Redireciona para front, sem token na URL
+        res.redirect(`${process.env.FRONT_URL}/profile`);
     }
 );
 
