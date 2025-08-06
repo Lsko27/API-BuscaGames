@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const rateLimit = require("express-rate-limit");
+const nodemailer = require('nodemailer');
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-aqui'; // altere para uma chave segura no .env
@@ -228,6 +229,61 @@ router.get('/users/:userName', async (req, res) => {
   } catch (error) {
     console.error('Erro ao verificar username:', error);
     res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
+// Rota para envio do e-mail de redefinição de senha
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'O e-mail é obrigatório' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Criar token JWT com expiração curta (ex: 15 min)
+    const resetToken = jwt.sign(
+      { userId: user.id },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    // URL do frontend que vai receber o token
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    // Configurar o transport de e-mail
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // ou outro serviço SMTP
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Enviar e-mail
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Redefinição de Senha',
+      html: `
+        <p>Olá ${user.name || user.userName},</p>
+        <p>Recebemos uma solicitação para redefinir sua senha.</p>
+        <p>Clique no link abaixo para criar uma nova senha (expira em 15 minutos):</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>Se você não solicitou, ignore este e-mail.</p>
+      `,
+    });
+
+    return res.json({ message: 'E-mail de redefinição enviado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao enviar e-mail de recuperação:', error);
+    return res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
