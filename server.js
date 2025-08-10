@@ -20,7 +20,7 @@ app.use(
 
 app.use(express.json());
 
-const ValidationRoutes = require('./auth/validation');
+const ValidationRoutes = require('./auth/routes/users');
 app.use('/api/auth', ValidationRoutes);
 
 const authRoutes = require('./auth/routes/auth');
