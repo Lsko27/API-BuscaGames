@@ -70,7 +70,7 @@ router.get("/me", async (req, res) => {
   } catch (error) {
     console.error("Erro ao verificar token:", error);
     res.status(401).json({ error: "Token inválido ou expirado" });
-  }j
+  }
 });
 
 
