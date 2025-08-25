@@ -197,7 +197,7 @@ router.patch("/:id/role", async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
 
-  const allowedRoles = ["consumer", "moderator"];
+  const allowedRoles = ["consumer", "moderator", "administrator"];
   if (!allowedRoles.includes(role)) {
     return res.status(400).json({ error: "Role inválida" });
   }

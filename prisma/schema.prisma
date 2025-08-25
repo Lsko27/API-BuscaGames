@@ -16,6 +16,7 @@ datasource db {
 enum Role {
   consumer
   moderator
+  administrator
 }
 
 model User {
@@ -50,14 +51,13 @@ enum QuestType {
 }
 
 model Quest {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
   points      Int
-  progress    Int?    
-  totalSteps  Int?     
-  iconName    String?   
+  progress    Int?
+  totalSteps  Int?
+  iconName    String?
   type        QuestType?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 }
-
